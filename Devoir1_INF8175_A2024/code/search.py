@@ -99,8 +99,19 @@ def depthFirstSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 1 ICI
     '''
+    visited = set()
+    stack = util.Stack()
+    stack.push((problem.getStartState(), [], 0))
 
-    util.raiseNotDefined()
+    while not stack.isEmpty():
+        state, path, cost = stack.pop()
+        if problem.isGoalState(state):
+            return path
+        if state not in visited:
+            visited.add(state)
+            for next_state, action, cost in problem.getSuccessors(state):
+                stack.push((next_state, path + [action], cost))
+    return []
 
 
 def breadthFirstSearch(problem:SearchProblem)->List[Direction]:
@@ -110,8 +121,19 @@ def breadthFirstSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 2 ICI
     '''
+    visited = set()
+    queue = util.Queue()
+    queue.push((problem.getStartState(), [], 0))
 
-    util.raiseNotDefined()
+    while not queue.isEmpty():
+        state, path, cost = queue.pop()
+        if problem.isGoalState(state):
+            return path
+        if state not in visited:
+            visited.add(state)
+            for next_state, action, cost in problem.getSuccessors(state):
+                queue.push((next_state, path + [action], cost))
+    return []
 
 def uniformCostSearch(problem:SearchProblem)->List[Direction]:
     """Search the node of least total cost first."""
@@ -120,6 +142,21 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 3 ICI
     '''
+    visited = {problem.getStartState()}
+    heap = util.PriorityQueue()
+    heap.push((problem.getStartState(), [], 0), 0)
+    min_cost = float('inf')
+
+    while not heap.isEmpty():
+        state, path, cost = heap.pop()
+        if problem.isGoalState(state):
+            return path
+        if cost < min_cost:
+            visited.add(state)
+            for next_state, action, step_cost in problem.getSuccessors(state):
+                if next_state not in visited:
+                    heap.push((next_state, path + [action], cost + step_cost), cost + step_cost)
+
 
     util.raiseNotDefined()
 
