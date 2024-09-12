@@ -172,7 +172,24 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 4 ICI
     '''
+    state = problem.getStartState()
+    visited = set()
+    heap = util.PriorityQueue()
+    heap.push((state, [], 0), heuristic(state, problem))
+    while not heap.isEmpty():
+        state, path, cost = heap.pop()
+        visited.add(state)
+        if problem.isGoalState(state):
+            return path
 
+        else:
+            children = problem.getSuccessors(state)
+            for child in children:
+                childState, childAction, childCost = child
+                if childState in visited:
+                    continue
+                newCost = cost + heuristic(childState, problem)
+                heap.push((childState, path + [childAction], cost + childCost), newCost)
     util.raiseNotDefined()
 
 
