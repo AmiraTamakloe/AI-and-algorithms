@@ -290,12 +290,12 @@ class CornersProblem(search.SearchProblem):
         self._expanded = 0 # DO NOT CHANGE; Number of search nodes expanded
         # Please add any code here which you would like to use
         # in initializing the problem
+        self.cornerVisited = set()
   
         '''
             INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
         '''
-
-
+        self.startingGameState = startingGameState
     def getStartState(self):
         """
         Returns the start state (in your state space, not the full Pacman state
@@ -305,8 +305,8 @@ class CornersProblem(search.SearchProblem):
         '''
             INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
         '''
-        
-        util.raiseNotDefined()
+        return (self.startingPosition, set())
+        # util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
@@ -316,8 +316,13 @@ class CornersProblem(search.SearchProblem):
         '''
             INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
         '''
-
-        util.raiseNotDefined()
+        visitedCorners = state[1]
+        if state[0] in self.corners:
+            if state[0] not in visitedCorners:
+                visitedCorners.add(state)
+            return len(visitedCorners) == 4
+        return False
+        # util.raiseNotDefined()
 
     def getSuccessors(self, state):
         """
@@ -329,7 +334,6 @@ class CornersProblem(search.SearchProblem):
             state, 'action' is the action required to get there, and 'stepCost'
             is the incremental cost of expanding to that successor
         """
-
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
@@ -342,7 +346,16 @@ class CornersProblem(search.SearchProblem):
             '''
                 INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
             '''
+            x, y = state[0]
 
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                visitedCorners = state[1].copy()
+                if (nextx, nexty) in self.corners:
+                    if (nextx, nexty) not in visitedCorners:
+                        visitedCorners.add((nextx, nexty))
+                successors.append((((nextx, nexty), visitedCorners ), action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -379,8 +392,15 @@ def cornersHeuristic(state, problem):
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 6 ICI
     '''
+    # dijkstra to all unvisited corners
+    # find the shortest path to the nearest corner
+    distances = [float('inf') for _ in range(4 - len(state[1]))]
     
-    return 0
+    
+    
+    
+    return 
+
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"

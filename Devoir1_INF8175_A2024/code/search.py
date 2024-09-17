@@ -99,18 +99,26 @@ def depthFirstSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 1 ICI
     '''
-    visited = set()
-    stack = util.Stack()
-    stack.push((problem.getStartState(), [], 0))
+    visited = []
+    stack = util.Stack() 
+    stack.push(problem.getStartState())
+    currPath = util.Stack() 
+    currPath.push([])  
 
-    while not stack.isEmpty():
-        state, path, cost = stack.pop()
-        if problem.isGoalState(state):
+
+    while not stack.isEmpty():  
+        state = stack.pop()  
+        path = currPath.pop() 
+        if problem.isGoalState(state): 
             return path
-        if state not in visited:
-            visited.add(state)
-            for next_state, action, cost in problem.getSuccessors(state):
-                stack.push((next_state, path + [action], cost))
+
+        if state not in visited:  
+            visited.append(state) 
+            for child, direction, cost in problem.getSuccessors(state):  
+                if child not in visited: 
+                    stack.push(child)  
+                    currPath.push(path + [direction])  
+
     return []
 
 
@@ -121,18 +129,26 @@ def breadthFirstSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 2 ICI
     '''
-    visited = set()
-    queue = util.Queue()
-    queue.push((problem.getStartState(), [], 0))
+    visited = []
+    queue = util.Queue() 
+    queue.push(problem.getStartState())
+    currPath = util.Queue() 
+    currPath.push([])  
 
-    while not queue.isEmpty():
-        state, path, cost = queue.pop()
-        if problem.isGoalState(state):
+
+    while not queue.isEmpty():  
+        state = queue.pop()  
+        path = currPath.pop() 
+        if problem.isGoalState(state): 
             return path
-        if state not in visited:
-            visited.add(state)
-            for next_state, action, cost in problem.getSuccessors(state):
-                queue.push((next_state, path + [action], cost))
+
+        if state not in visited:  
+            visited.append(state) 
+            for child, direction, cost in problem.getSuccessors(state):  
+                if child not in visited: 
+                    queue.push(child)  
+                    currPath.push(path + [direction])  
+
     return []
 
 def uniformCostSearch(problem:SearchProblem)->List[Direction]:
@@ -172,26 +188,28 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 4 ICI
     '''
-    state = problem.getStartState()
-    visited = set()
-    heap = util.PriorityQueue()
-    heap.push((state, [], 0), heuristic(state, problem))
-    while not heap.isEmpty():
-        state, path, cost = heap.pop()
-        visited.add(state)
-        if problem.isGoalState(state):
+    visited = []
+    queue = util.PriorityQueue()  
+    queue.push(problem.getStartState(), 0)
+    currPath = util.PriorityQueue() 
+    currPath.push([], 0)  
+
+
+    while not queue.isEmpty():  
+        state = queue.pop()  
+        path = currPath.pop() 
+        if problem.isGoalState(state): 
             return path
 
-        else:
-            children = problem.getSuccessors(state)
-            for child in children:
-                childState, childAction, childCost = child
-                if childState in visited:
-                    continue
-                newCost = cost + heuristic(childState, problem)
-                heap.push((childState, path + [childAction], cost + childCost), newCost)
-    util.raiseNotDefined()
+        if state not in visited:  
+            visited.append(state) 
+            for child, direction, cost in problem.getSuccessors(state):  
+                if child not in visited: 
+                    newCost = problem.getCostOfActions(path + [direction]) + heuristic(child, problem)  
+                    queue.push(child, newCost)  
+                    currPath.push(path + [direction], newCost)  
 
+    return []
 
 # Abbreviations
 bfs = breadthFirstSearch
