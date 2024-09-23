@@ -501,16 +501,6 @@ def foodHeuristic(state, problem: FoodSearchProblem):
         INSÉREZ VOTRE SOLUTION À LA QUESTION 7 ICI
     '''
 
-    score = 0
-    foodList = foodGrid.asList()
-    if len(foodList) == 0:
-        return score
-    while foodList:
-        distances = [util.manhattanDistance(position, food) for food in foodList]
-        minDist = min(distances)
-        score += minDist
-        position = foodList[distances.index(minDist)]
-        foodList.remove(position)
-    return score
+ 
 
     
