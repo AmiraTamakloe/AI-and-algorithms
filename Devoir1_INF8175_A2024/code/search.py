@@ -174,7 +174,7 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
                     heap.push((next_state, path + [action], cost + step_cost), cost + step_cost)
 
 
-    util.raiseNotDefined()
+    return []
 
 def nullHeuristic(state:GameState, problem:SearchProblem=None)->List[Direction]:
     """
