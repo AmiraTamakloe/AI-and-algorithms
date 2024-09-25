@@ -99,8 +99,27 @@ def depthFirstSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 1 ICI
     '''
+    visited = []
+    stack = util.Stack() 
+    stack.push(problem.getStartState())
+    currPath = util.Stack() 
+    currPath.push([])  
 
-    util.raiseNotDefined()
+
+    while not stack.isEmpty():  
+        state = stack.pop()  
+        path = currPath.pop() 
+        if problem.isGoalState(state): 
+            return path
+
+        if state not in visited:  
+            visited.append(state) 
+            for child, direction, cost in problem.getSuccessors(state):  
+                if child not in visited: 
+                    stack.push(child)  
+                    currPath.push(path + [direction])  
+
+    return []
 
 
 def breadthFirstSearch(problem:SearchProblem)->List[Direction]:
@@ -110,8 +129,27 @@ def breadthFirstSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 2 ICI
     '''
+    visited = []
+    queue = util.Queue() 
+    queue.push(problem.getStartState())
+    currPath = util.Queue() 
+    currPath.push([])  
 
-    util.raiseNotDefined()
+
+    while not queue.isEmpty():  
+        state = queue.pop()  
+        path = currPath.pop() 
+        if problem.isGoalState(state): 
+            return path
+
+        if state not in visited:  
+            visited.append(state) 
+            for child, direction, cost in problem.getSuccessors(state):  
+                if child not in visited: 
+                    queue.push(child)  
+                    currPath.push(path + [direction])  
+
+    return []
 
 def uniformCostSearch(problem:SearchProblem)->List[Direction]:
     """Search the node of least total cost first."""
@@ -120,8 +158,23 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 3 ICI
     '''
+    visited = {problem.getStartState()}
+    heap = util.PriorityQueue()
+    heap.push((problem.getStartState(), [], 0), 0)
+    min_cost = float('inf')
 
-    util.raiseNotDefined()
+    while not heap.isEmpty():
+        state, path, cost = heap.pop()
+        if problem.isGoalState(state):
+            return path
+        if cost < min_cost:
+            visited.add(state)
+            for next_state, action, step_cost in problem.getSuccessors(state):
+                if next_state not in visited:
+                    heap.push((next_state, path + [action], cost + step_cost), cost + step_cost)
+
+
+    return []
 
 def nullHeuristic(state:GameState, problem:SearchProblem=None)->List[Direction]:
     """
@@ -135,9 +188,28 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 4 ICI
     '''
+    visited = []
+    queue = util.PriorityQueue()  
+    queue.push(problem.getStartState(), 0)
+    currPath = util.PriorityQueue() 
+    currPath.push([], 0)  
 
-    util.raiseNotDefined()
 
+    while not queue.isEmpty():  
+        state = queue.pop()  
+        path = currPath.pop() 
+        if problem.isGoalState(state): 
+            return path
+
+        if state not in visited:  
+            visited.append(state) 
+            for child, direction, cost in problem.getSuccessors(state):  
+                if child not in visited: 
+                    newCost = problem.getCostOfActions(path + [direction]) + heuristic(child, problem)  
+                    queue.push(child, newCost)  
+                    currPath.push(path + [direction], newCost)  
+
+    return []
 
 # Abbreviations
 bfs = breadthFirstSearch
