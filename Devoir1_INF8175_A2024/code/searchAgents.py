@@ -39,7 +39,6 @@ Good luck and happy searching!
 from game import Directions
 from game import Agent
 from game import Actions
-import sys
 import util
 import time
 import search
@@ -397,11 +396,13 @@ def cornersHeuristic(state, problem):
     unvisitedCorners = [corner for corner in corners if corner not in state[1]]
     
     while unvisitedCorners:
-        distances = [(abs(x - g[0]) + abs(y - g[1]), g) for g in unvisitedCorners]
-        minDist, closestGoal = min(distances)
+        distances = []
+        for corner in unvisitedCorners:
+            distances.append((util.manhattanDistance((x, y), corner), corner))
+        minDist, closestCorner = min(distances)
         score += minDist
-        x, y = closestGoal
-        unvisitedCorners.remove(closestGoal)
+        x, y = closestCorner
+        unvisitedCorners.remove(closestCorner)
     
     return score
 
@@ -506,26 +507,26 @@ def foodHeuristic(state, problem: FoodSearchProblem):
     if len(foods) == 0:
         return score
 
-    unvisited_foods = foods
-    if not unvisited_foods:
+    unvisitedFoods = foods
+    if not unvisitedFoods:
         return score
     
-    closest_food_dist = float('inf')
+    closestDist = float('inf')
     for food in foods:
-        temp_dist = util.manhattanDistance(position, food)
-        if temp_dist < closest_food_dist:
-            closest_food_dist = temp_dist
+        tempDist = util.manhattanDistance(position, food)
+        if tempDist < closestDist:
+            closestDist = tempDist
     
     food = foods[0]
     while foods:
-        next_food, min_dist = foods[0], float('inf')
-        for unvisited_food in foods:
-            dist = util.manhattanDistance(food, unvisited_food)
-            if dist < min_dist:
-                min_dist = dist
-                next_food = unvisited_food
-        food = next_food
-        score += min_dist
-        foods.remove(next_food)
-    return closest_food_dist + score
+        nextFood, minDist = foods[0], float('inf')
+        for unvisitedFood in foods:
+            dist = util.manhattanDistance(food, unvisitedFood)
+            if dist < minDist:
+                minDist = dist
+                nextFood = unvisitedFood
+        food = nextFood
+        score += minDist
+        foods.remove(nextFood)
+    return closestDist + score
     
