@@ -158,21 +158,24 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 3 ICI
     '''
-    visited = {problem.getStartState()}
+    visited = []
     heap = util.PriorityQueue()
-    heap.push((problem.getStartState(), [], 0), 0)
-    min_cost = float('inf')
+    heap.push((problem.getStartState(), 0), 0)
+    currPath = util.PriorityQueue() 
+    currPath.push([], 0) 
 
     while not heap.isEmpty():
-        state, path, cost = heap.pop()
+        state, cost = heap.pop()
+        path = currPath.pop()
         if problem.isGoalState(state):
             return path
-        if cost < min_cost:
-            visited.add(state)
-            for next_state, action, step_cost in problem.getSuccessors(state):
-                if next_state not in visited:
-                    heap.push((next_state, path + [action], cost + step_cost), cost + step_cost)
-
+        if state not in visited:
+            visited.append(state)
+            for child, direction, step_cost in problem.getSuccessors(state):
+                if child not in visited:
+                    new_cost = problem.getCostOfActions(path + [direction])
+                    heap.push((child, cost + step_cost), new_cost)
+                    currPath.push(path + [direction], new_cost)
 
     return []
 
@@ -189,14 +192,14 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
         INSÉREZ VOTRE SOLUTION À LA QUESTION 4 ICI
     '''
     visited = []
-    queue = util.PriorityQueue()  
-    queue.push(problem.getStartState(), 0)
+    heap = util.PriorityQueue()  
+    heap.push(problem.getStartState(), 0)
     currPath = util.PriorityQueue() 
     currPath.push([], 0)  
 
 
-    while not queue.isEmpty():  
-        state = queue.pop()  
+    while not heap.isEmpty():  
+        state = heap.pop()  
         path = currPath.pop() 
         if problem.isGoalState(state): 
             return path
@@ -206,7 +209,7 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
             for child, direction, cost in problem.getSuccessors(state):  
                 if child not in visited: 
                     newCost = problem.getCostOfActions(path + [direction]) + heuristic(child, problem)  
-                    queue.push(child, newCost)  
+                    heap.push(child, newCost)  
                     currPath.push(path + [direction], newCost)  
 
     return []
