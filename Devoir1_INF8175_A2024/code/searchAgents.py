@@ -504,8 +504,6 @@ def foodHeuristic(state, problem: FoodSearchProblem):
 
     score = 0
     foods = foodGrid.asList()
-    if len(foods) == 0:
-        return score
 
     unvisitedFoods = foods
     if not unvisitedFoods:
