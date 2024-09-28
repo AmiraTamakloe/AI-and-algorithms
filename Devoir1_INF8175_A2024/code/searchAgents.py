@@ -11,7 +11,6 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-
 """
 This file contains all of the agents that can be selected to control Pacman.  To
 select an agent, use the '-p' option when running pacman.py.  Arguments can be
@@ -397,11 +396,13 @@ def cornersHeuristic(state, problem):
     unvisitedCorners = [corner for corner in corners if corner not in state[1]]
     
     while unvisitedCorners:
-        distances = [(abs(x - g[0]) + abs(y - g[1]), g) for g in unvisitedCorners]
-        minDist, closestGoal = min(distances)
+        distances = []
+        for corner in unvisitedCorners:
+            distances.append((util.manhattanDistance((x, y), corner), corner))
+        minDist, closestCorner = min(distances)
         score += minDist
-        x, y = closestGoal
-        unvisitedCorners.remove(closestGoal)
+        x, y = closestCorner
+        unvisitedCorners.remove(closestCorner)
     
     return score
 
@@ -502,15 +503,28 @@ def foodHeuristic(state, problem: FoodSearchProblem):
     '''
 
     score = 0
-    foodList = foodGrid.asList()
-    if len(foodList) == 0:
-        return score
-    while foodList:
-        distances = [util.manhattanDistance(position, food) for food in foodList]
-        minDist = min(distances)
-        score += minDist
-        position = foodList[distances.index(minDist)]
-        foodList.remove(position)
-    return score
+    foods = foodGrid.asList()
 
+    unvisitedFoods = foods
+    if not unvisitedFoods:
+        return score
+    
+    closestDist = float('inf')
+    for food in foods:
+        tempDist = util.manhattanDistance(position, food)
+        if tempDist < closestDist:
+            closestDist = tempDist
+    
+    food = foods[0]
+    while foods:
+        nextFood, minDist = foods[0], float('inf')
+        for unvisitedFood in foods:
+            dist = util.manhattanDistance(food, unvisitedFood)
+            if dist < minDist:
+                minDist = dist
+                nextFood = unvisitedFood
+        food = nextFood
+        score += minDist
+        foods.remove(nextFood)
+    return closestDist + score
     
