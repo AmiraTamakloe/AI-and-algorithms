@@ -3,7 +3,8 @@ from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
 from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
-
+from board_divercite import BoardDivercite
+import copy
 class MyPlayer(PlayerDivercite):
     """
     Player class for Divercite game that makes random moves.
@@ -34,7 +35,6 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-
         _, best_action = self.max_value(current_state, float('-inf'), float('inf'), 0)
         return best_action
 
@@ -49,6 +49,9 @@ class MyPlayer(PlayerDivercite):
         # generate_possible_heavy_actions sera changée par fonction prenant en considération les heuristiques
         for a in state.generate_possible_heavy_actions():
             next_state = a.get_next_game_state()
+            if self.check_already_seen(next_state):
+                continue
+
             value, _ = self.min_value(next_state, alpha, beta, depth + 1)
             if value > score:
                 score = value
@@ -79,3 +82,21 @@ class MyPlayer(PlayerDivercite):
                 return score, action
             
         return score, action
+    
+    def check_already_seen(self, state: GameState):
+        board = BoardDivercite(state.get_rep().get_env(), state.get_rep().get_dimensions()).get_grid()
+        for i in range(4):
+            if board in self.seen_boards:
+                return True
+            board = self.rotate_matrix_90(board)
+        self.seen_boards.append(copy.deepcopy(board))
+        return False
+    
+    def rotate_matrix_90(self, matrix):
+        n = len(matrix)
+        for i in range(n):
+            for j in range(i, n):
+                matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
+        for i in range(n):
+            matrix[i].reverse()
+        return matrix
