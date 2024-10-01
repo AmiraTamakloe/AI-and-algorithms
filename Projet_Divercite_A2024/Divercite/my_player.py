@@ -23,7 +23,7 @@ class MyPlayer(PlayerDivercite):
         """
         super().__init__(piece_type, name)
         self._seen_transposition_tables = {}
-        self.max_depth = 5
+        self.max_depth = 3
         self.node_count = 0
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
@@ -55,7 +55,7 @@ class MyPlayer(PlayerDivercite):
         
         score = float('-inf')
         action = None
-        for a in state.generate_possible_heavy_actions():
+        for a in self.order_actions(state):
             next_state = a.get_next_game_state()
             value, _ = self.min_value(next_state, alpha, beta, depth + 1)
                 
@@ -84,7 +84,7 @@ class MyPlayer(PlayerDivercite):
         score = float('inf')
         action = None
 
-        for a in state.generate_possible_heavy_actions():
+        for a in self.order_actions(state):
             next_state = a.get_next_game_state()
             
             value, _ = self.max_value(next_state, alpha, beta, depth + 1)
@@ -112,3 +112,16 @@ class MyPlayer(PlayerDivercite):
     def get_player_ids(self, state):
         keys = list(state.scores.keys())
         return (keys[0], keys[1]) if keys[0] == self.get_id() else (keys[1], keys[0])
+
+    def order_actions(self, state: GameState):
+        actions = []
+        for a in state.generate_possible_heavy_actions():
+            actions.append(a)
+        actions.sort(key=lambda x: self.score_delta(x), reverse=True)
+        return actions
+    
+    def score_delta(self, action: Action):
+        player_id, other_player_id = self.get_player_ids(action.current_game_state)
+        delta_player = action.next_game_state.scores[self.get_id()] - action.current_game_state.scores[self.get_id()]
+        delta_opponent = action.next_game_state.scores[other_player_id] - action.current_game_state.scores[other_player_id]
+        return delta_player - delta_opponent
