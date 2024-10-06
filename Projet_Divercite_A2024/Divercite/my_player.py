@@ -27,9 +27,6 @@ class MyPlayer(PlayerDivercite):
         self._seen_transposition_tables = {}
         self.number_of_remaining_moves = 20
         self._timeout = 0
-        self._max_depth = 0
-        self._seen_tables = 0
-        self._visited_nodes = 0
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
@@ -47,19 +44,13 @@ class MyPlayer(PlayerDivercite):
             if time.time() > self._timeout:
                 break
             _, action = self.max_value(current_state, float('-inf'), float('inf'), depth)
-        self._max_depth = max(self._max_depth, depth)
         self.number_of_remaining_moves -= 1
-        print("Max depth",self._max_depth)
-        print("Nodes", self._visited_nodes)
-        print("Tables", self._seen_tables)
         return action
 
 
     def max_value(self, state: GameState, alpha: int, beta: int, depth: int):
-        self._visited_nodes += 1
         if hash(state) in self._seen_transposition_tables:
             if self._seen_transposition_tables[hash(state)]['depth'] >= depth:
-                self._seen_tables += 1
                 return self._seen_transposition_tables[hash(state)]['score'], self._seen_transposition_tables[hash(state)]['action']
             
         if time.time() > self._timeout or state.is_done() or not depth:
@@ -71,7 +62,6 @@ class MyPlayer(PlayerDivercite):
         actions = self._generate_heap_light_action(state, is_max_heap=True)
         while len(actions) > 0:
             a = heapq.heappop(actions)[2]
-        # for a in state.generate_possible_heavy_actions():
             next_state = a.get_heavy_action(state).get_next_game_state()
             value, _ = self.min_value(next_state, alpha, beta, depth - 1)
             if value > score:
@@ -81,19 +71,15 @@ class MyPlayer(PlayerDivercite):
 
             if score >= beta:
                 self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
-                # self.record_seen_board(state, score, action, depth)
                 return score, action
             if time.time() > self._timeout:
                 break
         self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
-        # self.record_seen_board(state, score, action, depth)
         return score, action
 
     def min_value(self, state: GameState, alpha: int, beta: int, depth: int):
-        self._visited_nodes += 1
         if hash(state) in self._seen_transposition_tables:
             if self._seen_transposition_tables[hash(state)]['depth'] >= depth:
-                self._seen_tables += 1
                 return self._seen_transposition_tables[hash(state)]['score'], self._seen_transposition_tables[hash(state)]['action']
 
         if time.time() > self._timeout or state.is_done() or not depth:
@@ -104,7 +90,6 @@ class MyPlayer(PlayerDivercite):
         actions = self._generate_heap_light_action(state, is_max_heap=False)
         while len(actions) > 0:
             a = heapq.heappop(actions)[2]
-        # for a in state.generate_possible_heavy_actions():
             next_state = a.get_heavy_action(state).get_next_game_state()
             value, _ = self.max_value(next_state, alpha, beta, depth - 1)
 
@@ -115,12 +100,10 @@ class MyPlayer(PlayerDivercite):
 
             if score <= alpha or time.time() > self._timeout:
                 self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
-                # self.record_seen_board(state, score, action, depth)
                 return score, action        
             if time.time() > self._timeout:
                 break
         self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
-        # self.record_seen_board(state, score, action, depth)
         return score, action
 
     def record_seen_board(self, hash, score, action, depth):
