@@ -49,6 +49,7 @@ constraint sum(chiffres) > 15;
 % Le produit des 3 derniers chiffres (chiffre à la position des centaines×chiffre à la position des dizaines × chiffre à la position des unités) doit être minimisé.
 p = chiffres[2] * chiffres[3] * chiffres[4]; % Produit des 3 derniers chiffres
 solve minimize p;
+
 constraint nombre = 1000 * chiffres[1] + 100 * chiffres[2] + 10 * chiffres[3] + chiffres[4];
 %-----------------------------------------------------------------------------%
 output [
