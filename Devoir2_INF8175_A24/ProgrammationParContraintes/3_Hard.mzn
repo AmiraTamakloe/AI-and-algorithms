@@ -37,6 +37,7 @@ array[1..n] of var 0..max_trajet: cumul_temps;
 array[1..n] of var 0..max_fenetre: temps_attente;
 % Temps d'attente total 
 var 0..max_trajet: total_temps_attentes = sum(temps_attente);
+var 1..n: index;
 
 %-----------------------------------------------------------------------------%
 % Objectif
@@ -48,8 +49,43 @@ var int: temps_trajet;
 %-----------------------------------------------------------------------------%
 % Partie étudiant
 %-----------------------------------------------------------------------------%
+% S'assurer d'avoir un circuit valid
+constraint alldifferent(circuit_tournee);
+
+% S'assurer que l'on visite toute les villes
+constraint alldifferent(chemin_tournee);
+
+% Connecter chemin_tournee à circuit_tournee
+constraint forall(i in 1..n-1) (
+  circuit_tournee[chemin_tournee[i]] = chemin_tournee[i + 1]
+);
+
+% S'assurer que la dernière ville visitée est celle du début du tour
+constraint circuit_tournee[chemin_tournee[n]] = chemin_tournee[1];
+
+% Contrainte de fenetre d'arrivee
+constraint forall(i in 1..n) (
+   cumul_temps[i] <= fenetre_arrivee[i,2]
+);
+  
+% Calculer temps d'attente
+constraint forall(i in 1..n) (
+  temps_attente[chemin_tournee[i]] = max(fenetre_arrivee[chemin_tournee[i],1], 0)
+);
+
+% % Mettre à jour le temps cumulé
+% constraint cumul_temps[chemin_tournee[1]] = temps_attente[chemin_tournee[1]];
+% constraint forall(i in 2..n) (
+%   cumul_temps[chemin_tournee[i]] = temps_attente[chemin_tournee[i]] + distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[chemin_tournee[i-1]] 
+% );
 
 
+% % %Calculer le temps total
+% constraint temps_trajet = cumul_temps[chemin_tournee[n]] + distance[chemin_tournee[n], chemin_tournee[1]];
+
+% % % Minimiser le temps_trajet
+% solve minimize temps_trajet;
+solve satisfy;
 %-----------------------------------------------------------------------------%
 
 output [

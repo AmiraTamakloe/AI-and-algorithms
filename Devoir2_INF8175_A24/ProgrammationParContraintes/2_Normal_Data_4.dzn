@@ -1,0 +1,7 @@
+n = 4;
+m = 23;
+
+duree_tache = [6,3,10,4];
+ressource_tache = [4,5,1,2];
+
+limite = 6;

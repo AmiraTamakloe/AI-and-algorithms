@@ -1,5 +1,6 @@
-% NOM_ETUDIANT_1 (MATRICULE_1)
-% NOM_ETUDIANT_2 (MATRICULE_2)
+% Jacob Ducas (2138758)
+% Amira-Fatim Tamakloe (2131198)
+% Nour Zahreddine (2167661
 
 include "globals.mzn"; 
 
@@ -36,7 +37,20 @@ var int: fin_projet;
 %-----------------------------------------------------------------------------%
 % Partie étudiant
 %-----------------------------------------------------------------------------%
+constraint forall(i in 1..n) (
+    fin_tache[i] = debut_tache[i] + duree_tache[i]
+);
+% Max deux tâches commencées en même temps
+constraint forall(t in 1..m) (
+    sum([if debut_tache[i] == t then 1 else 0 endif | i in 1..n]) <= 2
+);
 
+% Ne pas dépasser limite
+constraint cumulative(debut_tache, duree_tache, ressource_tache, limite);
+
+% Minimiser fin_projet
+constraint fin_projet = max([fin_tache[i] | i in 1..n]);
+solve minimize fin_projet;
 
 %-----------------------------------------------------------------------------%
 

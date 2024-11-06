@@ -1,6 +1,6 @@
 % Jacob Ducas (2138758)
 % Amira-Fatim Tamakloe (2131198)
-% Nour Zahreddine (2167661
+% Nour Zahreddine (2167661)
 
 include "globals.mzn";
 
