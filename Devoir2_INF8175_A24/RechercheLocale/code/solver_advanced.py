@@ -1,5 +1,3 @@
-
-
 def solve(schedule):
     """
     Your solution of the problem
@@ -33,5 +31,3 @@ def solve(schedule):
         solution[course] = time_slot
     
     return solution
-
-    # raise Exception("Agent is not implemented")

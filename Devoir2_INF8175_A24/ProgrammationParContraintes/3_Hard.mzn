@@ -1,5 +1,6 @@
-% NOM_ETUDIANT_1 (MATRICULE_1)
-% NOM_ETUDIANT_2 (MATRICULE_2)
+% Jacob Ducas (2138758)
+% Amira-Fatim Tamakloe (2131198)
+% Nour Zahreddine (2167661)
 
 include "globals.mzn"; 
 
@@ -49,43 +50,60 @@ var int: temps_trajet;
 %-----------------------------------------------------------------------------%
 % Partie étudiant
 %-----------------------------------------------------------------------------%
-% S'assurer d'avoir un circuit valid
-constraint alldifferent(circuit_tournee);
+% Le chemin indique la succession de ville à partir de la première
+constraint chemin_tournee[n] = 1;
 
-% S'assurer que l'on visite toute les villes
+% S'assurer d'avoir un circuit valide
+constraint circuit(circuit_tournee);
+
+% S'assurer que l'on visite toute les villes une seule fois
 constraint alldifferent(chemin_tournee);
 
-% Connecter chemin_tournee à circuit_tournee
+% Liaison entre chemin_tournee et circuit_tournee
 constraint forall(i in 1..n-1) (
-  circuit_tournee[chemin_tournee[i]] = chemin_tournee[i + 1]
+   circuit_tournee[chemin_tournee[i]] = chemin_tournee[i + 1]
+ );
+
+% On ne peut pas gagner du temps durant le parcours et si cumul_temps[i] == cumul_temps[i-1], on n'aurait pas changé de ville
+constraint forall(i in 1..n-1) (
+  cumul_temps[i] < cumul_temps[i+1]
 );
 
-% S'assurer que la dernière ville visitée est celle du début du tour
-constraint circuit_tournee[chemin_tournee[n]] = chemin_tournee[1];
+% La première ville du chemin est la ville après 1
+constraint temps_attente[chemin_tournee[1]] == max(0, fenetre_arrivee[chemin_tournee[1],1] - distance[1, chemin_tournee[1]]);
 
-% Contrainte de fenetre d'arrivee
-constraint forall(i in 1..n) (
-   cumul_temps[i] <= fenetre_arrivee[i,2]
+% Le temps cumulé au temps 1 va être équivalent à la distance parcourue si on arrive dans fenetre sinon il faudra attentre l'ouverture de la ville
+constraint if distance[1, chemin_tournee[1]] >= fenetre_arrivee[chemin_tournee[1],1] /\ distance[1, chemin_tournee[1]] <= fenetre_arrivee[chemin_tournee[1],2] then cumul_temps[1] = distance[1, chemin_tournee[1]] else cumul_temps[1] = fenetre_arrivee[chemin_tournee[1],1] endif;
+
+% Ne pas rentrer dans une ville hors de sa fenêtre
+constraint forall(i in 2..n) (
+  cumul_temps[i] >= fenetre_arrivee[chemin_tournee[i],1] /\
+  cumul_temps[i] <= fenetre_arrivee[chemin_tournee[i],2]
 );
-  
-% Calculer temps d'attente
-constraint forall(i in 1..n) (
-  temps_attente[chemin_tournee[i]] = max(fenetre_arrivee[chemin_tournee[i],1], 0)
+
+% Le temps cumul suivant va être cumul_temps[precedent] + distance si dans fenetre sinon fenetre[curr, 1]
+constraint forall(i in 2..n) (
+if distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[i-1] >= fenetre_arrivee[chemin_tournee[i],1] then 
+  cumul_temps[i] = distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[i-1] 
+  else 
+    if distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[i-1] < fenetre_arrivee[chemin_tournee[i],1] then
+      cumul_temps[i] = fenetre_arrivee[chemin_tournee[i],1] endif
+    endif
 );
 
-% % Mettre à jour le temps cumulé
-% constraint cumul_temps[chemin_tournee[1]] = temps_attente[chemin_tournee[1]];
-% constraint forall(i in 2..n) (
-%   cumul_temps[chemin_tournee[i]] = temps_attente[chemin_tournee[i]] + distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[chemin_tournee[i-1]] 
-% );
+% Si on arrive avant la fenêtre, il faut considérer ce temps
+constraint forall(i in 2..n) (
+  if cumul_temps[i-1] + distance[chemin_tournee[i], chemin_tournee[i-1]] < cumul_temps[i] 
+    then temps_attente[chemin_tournee[i]] = cumul_temps[i] - cumul_temps[i-1] - distance[chemin_tournee[i], chemin_tournee[i-1]] 
+  else 
+    temps_attente[chemin_tournee[i]] = 0 endif
+);
 
+% Identifier le temps total du trajet à la fin
+constraint temps_trajet = cumul_temps[n];
 
-% % %Calculer le temps total
-% constraint temps_trajet = cumul_temps[chemin_tournee[n]] + distance[chemin_tournee[n], chemin_tournee[1]];
-
-% % % Minimiser le temps_trajet
-% solve minimize temps_trajet;
-solve satisfy;
+% Objectif
+solve minimize temps_trajet;
 %-----------------------------------------------------------------------------%
 
 output [

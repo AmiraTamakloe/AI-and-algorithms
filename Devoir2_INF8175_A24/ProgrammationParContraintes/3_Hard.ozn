@@ -1,0 +1,8 @@
+output ["\"output\": {","\"default\": ",showJSON(concat(["Chemin de la tournée                   : "++format(chemin_tournee)++"\n","Circuit de la tournée                  : "++format(circuit_tournee)++"\n","Temps cumulés avant d'entrer en ville  : "++format(cumul_temps)++"\n","Temps d'attente avant l'entrée en ville: "++format(temps_attente)++"\n","Temps d'attente total                  : "++format(total_temps_attentes)++"\n","Temps de trajet total                  : "++format(temps_trajet)++"\n"])),", \"raw\": ",showJSON(concat(["Chemin de la tournée                   : "++format(chemin_tournee)++"\n","Circuit de la tournée                  : "++format(circuit_tournee)++"\n","Temps cumulés avant d'entrer en ville  : "++format(cumul_temps)++"\n","Temps d'attente avant l'entrée en ville: "++format(temps_attente)++"\n","Temps d'attente total                  : "++format(total_temps_attentes)++"\n","Temps de trajet total                  : "++format(temps_trajet)++"\n"])),"}, \"sections\": [\"default\", \"raw\"]"];
+int: temps_trajet;
+int: n = 21;
+array [1..n] of int: temps_attente;
+int: total_temps_attentes = sum(temps_attente);
+array [1..n] of int: cumul_temps;
+array [1..n] of int: circuit_tournee;
+array [1..n] of int: chemin_tournee;
