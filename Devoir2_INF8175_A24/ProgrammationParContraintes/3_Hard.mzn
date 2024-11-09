@@ -52,12 +52,14 @@ var int: temps_trajet;
 %-----------------------------------------------------------------------------%
 % Le chemin indique la succession de ville à partir de la première
 constraint chemin_tournee[n] = 1;
-
+constraint circuit_tournee[1] = chemin_tournee[1]; 
+ 
 % S'assurer d'avoir un circuit valide
 constraint circuit(circuit_tournee);
 
 % S'assurer que l'on visite toute les villes une seule fois
 constraint alldifferent(chemin_tournee);
+constraint alldifferent(circuit_tournee);
 
 % Liaison entre chemin_tournee et circuit_tournee
 constraint forall(i in 1..n-1) (

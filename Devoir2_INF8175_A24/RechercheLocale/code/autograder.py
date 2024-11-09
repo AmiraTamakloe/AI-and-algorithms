@@ -40,12 +40,12 @@ if has_failed:
 else:
     
     print("[INFO] RUN: passed, >0/10")
-    if sum(scores_beaten[0]) < 3:
+    if sum(scores_beaten[0]) < 4:
         print("[INFO] Random player beaten: failed, <5/10")
         print("[INFO] Hint: vérifiez que votre recherche locale cherche à minimiser le coût, vérifiez que la fonction de voisinage est correcte, que la recherche locale s'arrête bien quand il n'y a plus d'amélioration possible")
     else:
         print("[INFO] Random player beaten: passed, >=5/10")
-        if (sum(scores_beaten[1]) < 3):
+        if (sum(scores_beaten[1]) < 4):
             print("[INFO] Secret player beaten: failed, <8/10")
             print("[INFO] Hint: Utilisez des metaheuristiques comme le recuit simulé ou le restart")
         else:
