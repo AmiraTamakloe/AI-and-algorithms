@@ -75,7 +75,10 @@ constraint forall(i in 1..n-1) (
 constraint temps_attente[chemin_tournee[1]] == max(0, fenetre_arrivee[chemin_tournee[1],1] - distance[1, chemin_tournee[1]]);
 
 % Le temps cumulé au temps 1 va être équivalent à la distance parcourue si on arrive dans fenetre sinon il faudra attentre l'ouverture de la ville
-constraint if distance[1, chemin_tournee[1]] >= fenetre_arrivee[chemin_tournee[1],1] /\ distance[1, chemin_tournee[1]] <= fenetre_arrivee[chemin_tournee[1],2] then cumul_temps[1] = distance[1, chemin_tournee[1]] else cumul_temps[1] = fenetre_arrivee[chemin_tournee[1],1] endif;
+constraint 
+  if distance[1, chemin_tournee[1]] >= fenetre_arrivee[chemin_tournee[1],1] /\ distance[1, chemin_tournee[1]] <= fenetre_arrivee[chemin_tournee[1],2] 
+    then cumul_temps[1] = distance[1, chemin_tournee[1]] 
+  else cumul_temps[1] = fenetre_arrivee[chemin_tournee[1],1] endif;
 
 % Ne pas rentrer dans une ville hors de sa fenêtre
 constraint forall(i in 2..n) (
@@ -85,12 +88,11 @@ constraint forall(i in 2..n) (
 
 % Le temps cumul suivant va être cumul_temps[precedent] + distance si dans fenetre sinon fenetre[curr, 1]
 constraint forall(i in 2..n) (
-if distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[i-1] >= fenetre_arrivee[chemin_tournee[i],1] then 
-  cumul_temps[i] = distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[i-1] 
-  else 
-    if distance[chemin_tournee[i], chemin_tournee[i-1]] + cumul_temps[i-1] < fenetre_arrivee[chemin_tournee[i],1] then
-      cumul_temps[i] = fenetre_arrivee[chemin_tournee[i],1] endif
-    endif
+  if cumul_temps[i - 1] + distance[chemin_tournee[i - 1], chemin_tournee[i]] >= fenetre_arrivee[chemin_tournee[i], 1]
+    then cumul_temps[i] = cumul_temps[i - 1] + distance[chemin_tournee[i - 1], chemin_tournee[i]]
+  else
+    cumul_temps[i] = cumul_temps[i - 1] + distance[chemin_tournee[i - 1], chemin_tournee[i]] + fenetre_arrivee[chemin_tournee[i], 1] - (cumul_temps[i - 1] + distance[chemin_tournee[i - 1], chemin_tournee[i]])
+  endif
 );
 
 % Si on arrive avant la fenêtre, il faut considérer ce temps
@@ -101,11 +103,18 @@ constraint forall(i in 2..n) (
     temps_attente[chemin_tournee[i]] = 0 endif
 );
 
+% Le temps cumulé au temps 1 
+constraint cumul_temps[1] = distance[1, chemin_tournee[1]] + temps_attente[chemin_tournee[1]];
+
+% Contrainte redondante sur le temps cumulé
+constraint forall(i in 2..n) (cumul_temps[i] = cumul_temps[i - 1] + distance[chemin_tournee[i - 1], chemin_tournee[i]] + temps_attente[chemin_tournee[i]]);
+
 % Identifier le temps total du trajet à la fin
 constraint temps_trajet = cumul_temps[n];
 
 % Objectif
 solve minimize temps_trajet;
+
 %-----------------------------------------------------------------------------%
 
 output [
