@@ -28,8 +28,6 @@ class MyPlayer(PlayerDivercite):
         self._seen_transposition_tables = {}
         self.number_of_remaining_moves = 20
         self._timeout = 0
-        self._nodes = 0
-        self._res = {}
         self._time_allocation = {
             20:1.4,
             19:1.3,
@@ -65,19 +63,14 @@ class MyPlayer(PlayerDivercite):
         """
         action = None
         self._timeout = time.time() + (self._time_allocation[ self.number_of_remaining_moves] * 60) - 3
-        max_depth = 0
         depth = 0
-        while time.time() < self._timeout:
+        while time.time() < self._timeout and self.number_of_remaining_moves * 2 > depth:
             if time.time() > self._timeout:
                 break
             _, action = self.max_value(current_state, float('-inf'), float('inf'), depth)
             depth += 1
-            max_depth = depth
-        self._res[self.number_of_remaining_moves] = {'time': (self._time_allocation[ self.number_of_remaining_moves] * 60)-3, 'time_unused': self._timeout- time.time(), 'nodes': self._nodes, 'depth': max_depth, 'remaining_time': remaining_time}
-        with open('results.txt', 'w') as results:
-            results.write(json.dumps(self._res))
+
         self.number_of_remaining_moves -= 1
-        self._nodes = 0
         return action
 
 
@@ -93,7 +86,6 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Tuple[int, Action]: The maximum value of the state and the action to take to get to that state.
         """
-        self._nodes += 1
         if hash(state) in self._seen_transposition_tables:
             if self._seen_transposition_tables[hash(state)]['depth'] >= depth:
                 return self._seen_transposition_tables[hash(state)]['score'], self._seen_transposition_tables[hash(state)]['action']
@@ -106,8 +98,6 @@ class MyPlayer(PlayerDivercite):
         actions = self._generate_heap_light_action(state, is_max_heap=True)
         while len(actions) > 0:
             a = heapq.heappop(actions)[2]
-            if a is None:
-                print("None action")
             next_state = a.get_heavy_action(state).get_next_game_state()
             value, _ = self.min_value(next_state, alpha, beta, depth - 1)
             if value > score:
@@ -135,7 +125,6 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Tuple[int, Action]: The minimum value of the state and the action to take to get to that state.
         """
-        self._nodes += 1
         if hash(state) in self._seen_transposition_tables:
             if self._seen_transposition_tables[hash(state)]['depth'] >= depth:
                 return self._seen_transposition_tables[hash(state)]['score'], self._seen_transposition_tables[hash(state)]['action']
