@@ -8,8 +8,8 @@
             "program": "${workspaceFolder}/Divercite/main_divercite.py",
             "args": [
                 "-t", "local",
+                "my_player_op.py",
                 "greedy_player_divercite.py",
-                "my_player.py",
                 "-r",
                 "-g"
             ],

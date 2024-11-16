@@ -16,7 +16,7 @@ class MyPlayer(PlayerDivercite):
         piece_type (str): piece type of the player
     """
 
-    def __init__(self, piece_type: str, name: str = "our_player"):
+    def __init__(self, piece_type: str, name: str = "main_player"):
         """
         Initialize the PlayerDivercite instance.
         Args:
@@ -29,31 +29,32 @@ class MyPlayer(PlayerDivercite):
         self.number_of_remaining_moves = 20
         self._timeout = 0
         self._time_allocation = {
-            20:1.4,
-            19:1.3,
-            18:1.3,
-            17:1.3,
-            16:1.3,
-            15:1.1,
+            20:0.2,
+            19:0.2,
+            18:0.3,
+            17:0.4,
+            16:0.6,
+            15:0.7,
             14:1.1,
-            13:1.1,
-            12:1.1,
-            11:0.7,
-            10:0.7,
-            9:0.7,
-            8:0.7,
-            7:0.5,
-            6:0.2,
+            13:1.2,
+            12:1.3,
+            11:1.6,
+            10:1.55,
+            9:1.45,
+            8:1.45,
+            7:1.45,
+            6:1.2,
             5:0.1,
-            4:0.1,
-            3:0.1,
-            2:0.1,
-            1:0.1
+            4:0.05,
+            3:0.05,
+            2:0.05,
+            1:0.05
           }
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
         Use the minimax algorithm to choose the best action based on the heuristic evaluation of game states.
+        Uti
 
         Args:
             current_state (GameState): The current game state.
@@ -62,19 +63,22 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
         action = None
-        self._timeout = time.time() + (self._time_allocation[ self.number_of_remaining_moves] * 60) - 3
-        depth = 0
-        while time.time() < self._timeout and self.number_of_remaining_moves * 2 > depth:
+        self._timeout = time.time() + (self._time_allocation[ self.number_of_remaining_moves] * 60)- 0.5
+        max_depth = 0
+        while time.time() < self._timeout and self.number_of_remaining_moves * 2 > max_depth:
             if time.time() > self._timeout:
                 break
-            _, action = self.max_value(current_state, float('-inf'), float('inf'), depth)
-            depth += 1
-
+            _, action = self.max_value(current_state, float('-inf'), float('inf'), max_depth)
+            max_depth += 1
+        # player_id, other_player_id = self.get_player_ids(current_state)
+        # with open("infos.csv", "a") as f:
+        #     f.write(f"{self.number_of_remaining_moves},{max_depth},{player_id},{current_state.scores[player_id]},{self._timeout},{time.time()},{other_player_id},{current_state.scores[other_player_id]}\n")
+        # f.close()
         self.number_of_remaining_moves -= 1
         return action
 
 
-    def max_value(self, state: GameState, alpha: int, beta: int, depth: int):
+    def max_value(self, state: GameState, alpha: int, beta: int, current_depth: int):
         """
         Return the maximum value of the state and the action to take to get to that state.
         
@@ -82,15 +86,15 @@ class MyPlayer(PlayerDivercite):
             state (GameState): The current game state.
             alpha (int): The alpha value.
             beta (int): The beta value.
-            depth (int): The depth of the search.
+            current_depth (int): The depth of the search.
         Returns:
             Tuple[int, Action]: The maximum value of the state and the action to take to get to that state.
         """
         if hash(state) in self._seen_transposition_tables:
-            if self._seen_transposition_tables[hash(state)]['depth'] >= depth:
+            if self._seen_transposition_tables[hash(state)]['depth'] >= current_depth:
                 return self._seen_transposition_tables[hash(state)]['score'], self._seen_transposition_tables[hash(state)]['action']
             
-        if time.time() > self._timeout or state.is_done() or not depth:
+        if time.time() > self._timeout or state.is_done() or not current_depth:
             player_id, other_player_id = self.get_player_ids(state)
             return state.scores[player_id] - state.scores[other_player_id], None     
         score = float('-inf')
@@ -98,22 +102,25 @@ class MyPlayer(PlayerDivercite):
         actions = self._generate_heap_light_action(state, is_max_heap=True)
         while len(actions) > 0:
             a = heapq.heappop(actions)[2]
+            if a is None:
+                # FIXME Bug where the action is None
+                return next(state.generate_possible_heavy_actions()), score
             next_state = a.get_heavy_action(state).get_next_game_state()
-            value, _ = self.min_value(next_state, alpha, beta, depth - 1)
+            value, _ = self.min_value(next_state, alpha, beta, current_depth - 1)
             if value > score:
                 score = value
                 action = a
                 alpha = max(alpha, score)
 
             if score >= beta:
-                self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
+                self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': current_depth}
                 return score, action
             if time.time() > self._timeout:
                 break
-        self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
+        self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': current_depth}
         return score, action
 
-    def min_value(self, state: GameState, alpha: int, beta: int, depth: int):
+    def min_value(self, state: GameState, alpha: int, beta: int, current_depth: int):
         """
         Return the minimum value of the state and the action to take to get to that state.
 
@@ -121,15 +128,15 @@ class MyPlayer(PlayerDivercite):
             state (GameState): The current game state.
             alpha (int): The alpha value.
             beta (int): The beta value.
-            depth (int): The depth of the search.
+            current_depth (int): The depth of the search.
         Returns:
             Tuple[int, Action]: The minimum value of the state and the action to take to get to that state.
         """
         if hash(state) in self._seen_transposition_tables:
-            if self._seen_transposition_tables[hash(state)]['depth'] >= depth:
+            if self._seen_transposition_tables[hash(state)]['depth'] >= current_depth:
                 return self._seen_transposition_tables[hash(state)]['score'], self._seen_transposition_tables[hash(state)]['action']
 
-        if time.time() > self._timeout or state.is_done() or not depth:
+        if time.time() > self._timeout or state.is_done() or not current_depth:
             player_id, other_player_id = self.get_player_ids(state)
             return state.scores[player_id] - state.scores[other_player_id], None
         score = float('inf')
@@ -137,8 +144,11 @@ class MyPlayer(PlayerDivercite):
         actions = self._generate_heap_light_action(state, is_max_heap=False)
         while len(actions) > 0:
             a = heapq.heappop(actions)[2]
+            if a is None:
+                # FIXME Bug where the action is None
+                return next(state.generate_possible_heavy_actions()), score
             next_state = a.get_heavy_action(state).get_next_game_state()
-            value, _ = self.max_value(next_state, alpha, beta, depth - 1)
+            value, _ = self.max_value(next_state, alpha, beta, current_depth - 1)
 
             if value < score:
                 score = value
@@ -146,11 +156,11 @@ class MyPlayer(PlayerDivercite):
                 beta = min(beta, score)
 
             if score <= alpha or time.time() > self._timeout:
-                self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
+                self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': current_depth}
                 return score, action        
             if time.time() > self._timeout:
                 break
-        self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': depth}
+        self._seen_transposition_tables[hash(state)] = {'score': score, 'action': action, 'depth': current_depth}
         return score, action
 
     def get_player_ids(self, state):
