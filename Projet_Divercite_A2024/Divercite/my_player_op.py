@@ -57,6 +57,21 @@ class MyPlayer(PlayerDivercite):
         self.floor = 0
         self.phase = 'EARLY'
 
+    def handle_phase_change(self, state: GameState):
+        free_positions = len(self._get_free_positions(state.get_rep().get_env(), state.get_rep().get_dimensions()))
+        print('free po',free_positions)
+        player_pieces_left = sum(state.players_pieces_left[self.get_id()].values())
+        print('player pieces left',player_pieces_left)
+        opponent_pieces_left = sum(state.players_pieces_left[self.get_opponent_id(state)[1]].values())
+        print('opponent_pieces_left',opponent_pieces_left)
+        
+        if free_positions > 50 and player_pieces_left > 10 and opponent_pieces_left > 10:
+            self.phase = 'EARLY'
+        elif 20 <= free_positions <= 50:
+            self.phase = 'MID'
+        else:
+            self.phase = 'LATE'
+
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
         Use the minimax algorithm to choose the best action based on the heuristic evaluation of game states.
@@ -67,6 +82,9 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
+        self.handle_phase_change(current_state)
+    
+
         action = None
         self._timeout = time.time() + (self._time_allocation[ self._number_of_remaining_moves] * 60)- 0.5
         start_time = time.time()
@@ -160,15 +178,25 @@ class MyPlayer(PlayerDivercite):
         board = BoardDivercite(env=b, dim=d)
         grid_data = board.get_grid()
         return [(i, j) for i, row in enumerate(grid_data) for j, cell in enumerate(row) if (cell == ('◇ ', 'Black') or cell == ('▢ ', 'Black'))]
+    
     def evaluate_board(self, state: GameState) -> int:
-        match self.phase:
-            case 'EARLY':
-                return self.evaluate_early(state)
-            case 'MID':
-                return self.evaluate_mid(state)
-            case 'LATE':
-                return self.evaluate_late(state)
-            
+        if self.phase == 'EARLY':
+            return self.evaluate_early(state)
+        elif self.phase == 'MID':
+            return self.evaluate_mid(state)
+        else:
+            return self.evaluate_late(state)
+
+    def evaluate_late(self, state: GameState) -> int:
+        if state.is_done():
+            scores = state.remove_draw(state.scores, state.get_rep())
+            if state.scores[self.get_id()] > state.scores[self.get_opponent_id(state)[1]]:
+                return 1
+            else:
+                return -1
+        else:
+            return 0
+
 
     # def evaluate_board(self, state: GameState) -> int:
     #     player_id, opponent_id =  self.get_opponent_id(state)
