@@ -67,7 +67,15 @@ class RegressionModel(object):
 
     def __init__(self) -> None:
         # Initialize your model parameters here
-        "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        "*** TODO: DONE HERE FOR QUESTION 2 ***"
+        hidden_layer_size = 200
+        self.w1 = nn.Parameter(1, hidden_layer_size)
+        self.b1 = nn.Parameter(1, hidden_layer_size)
+        self.w2 = nn.Parameter(hidden_layer_size, hidden_layer_size)
+        self.b2 = nn.Parameter(1, hidden_layer_size)
+        self.w3 = nn.Parameter(hidden_layer_size, 1)
+        self.b3 = nn.Parameter(1, 1)
+
 
     def run(self, x: nn.Constant) -> nn.Node:
         """
@@ -78,7 +86,11 @@ class RegressionModel(object):
         Returns:
             A node with shape (batch_size x 1) containing predicted y-values
         """
-        "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        "*** TODO: DONE HERE FOR QUESTION 2 ***"
+        layer1 = nn.ReLU(nn.AddBias(nn.Linear(x, self.w1), self.b1))
+        layer2 = nn.ReLU(nn.AddBias(nn.Linear(layer1, self.w2), self.b2))
+        y_pred = nn.AddBias(nn.Linear(layer2, self.w3), self.b3)
+        return y_pred
 
     def get_loss(self, x: nn.Constant, y: nn.Constant) -> nn.Node:
         """
@@ -90,13 +102,37 @@ class RegressionModel(object):
                 to be used for training
         Returns: a loss node
         """
-        "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        "*** TODO: DONE HERE FOR QUESTION 2 ***"
+        y_pred = self.run(x)
+        loss = nn.SquareLoss(y_pred, y)
+        return loss
+
 
     def train(self, dataset: RegressionDataset) -> None:
         """
         Trains the model.
         """
-        "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        "*** TODO: DONE HERE FOR QUESTION 2 ***"
+        batch_size = 1
+        learning_rate = 0.05
+        threshold = 0.02
+        need_update = True
+
+        while need_update:
+            for x, y in dataset.iterate_once(batch_size):
+                loss = self.get_loss(x, y)
+                gradients = nn.gradients(loss, [self.w1, self.b1, self.w2, self.b2, self.w3, self.b3])
+
+                self.w1.update(gradients[0], -learning_rate)
+                self.b1.update(gradients[1], -learning_rate)
+                self.w2.update(gradients[2], -learning_rate)
+                self.b2.update(gradients[3], -learning_rate)
+                self.w3.update(gradients[4], -learning_rate)
+                self.b3.update(gradients[5], -learning_rate)
+            
+            final_loss = nn.as_scalar(loss)
+            if final_loss <= threshold:
+                need_update = False
 
 
 class DigitClassificationModel(object):
