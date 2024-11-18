@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Debug with Arguments",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main_divercite.py",
+            "args": [
+                "-t", "local",
+                "my_player_op.py",
+                "greedy_player_divercite.py",
+                "-r",
+                "-g"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}
