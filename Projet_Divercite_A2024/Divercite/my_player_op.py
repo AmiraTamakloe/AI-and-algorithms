@@ -54,16 +54,12 @@ class MyPlayer(PlayerDivercite):
             2:0.05,
             1:0.05
           }
-        self.floor = 0
         self.phase = 'EARLY'
 
     def handle_phase_change(self, state: GameState):
         free_positions = len(self._get_free_positions(state.get_rep().get_env(), state.get_rep().get_dimensions()))
-        print('free po',free_positions)
         player_pieces_left = sum(state.players_pieces_left[self.get_id()].values())
-        print('player pieces left',player_pieces_left)
         opponent_pieces_left = sum(state.players_pieces_left[self.get_opponent_id(state)[1]].values())
-        print('opponent_pieces_left',opponent_pieces_left)
         
         if free_positions > 50 and player_pieces_left > 10 and opponent_pieces_left > 10:
             self.phase = 'EARLY'
@@ -89,11 +85,10 @@ class MyPlayer(PlayerDivercite):
         self._timeout = time.time() + (self._time_allocation[ self._number_of_remaining_moves] * 60)- 0.5
         start_time = time.time()
 
-        for depth in range(2, MAX_DEPTH, TWO_PLY_STEP):
+        for depth in range(1, MAX_DEPTH + 1, TWO_PLY_STEP):
             if time.time() > self._timeout:
                 break
-            self.floor = depth
-            _, action = self.minimax(current_state, 0, float('-inf'), float('inf'), maximizing=True)
+            _, action = self.minimax(current_state, depth, float('-inf'), float('inf'), maximizing=True)
         self._number_of_remaining_moves -= 1
         return action
     
@@ -103,8 +98,8 @@ class MyPlayer(PlayerDivercite):
             if stored_depth >= depth:
                 return stored_score, None
 
-        if depth == self.floor or state.is_done() or time.time() > self._timeout:
-            score = self.evaluate(state)
+        if depth == 0 or state.is_done():
+            score = self.evaluate_board(state)
             self._transposition_table[hash(state)] = {'depth': depth, 'score': score}
             return score, None
         
@@ -112,9 +107,9 @@ class MyPlayer(PlayerDivercite):
         if maximizing:
             maxEval = float('-inf')
             actions = self._generate_heap_light_action(state, is_max_heap=True)
-            while len(actions) > 0:
+            while len(actions) > 0 and time.time() > self._timeout:
                 action = heapq.heappop(actions)[2]
-                score, _ = self.minimax(action.get_heavy_action(state).get_next_game_state(), depth + 1, alpha, beta, False)
+                score, _ = self.minimax(action.get_heavy_action(state).get_next_game_state(), depth - 1, alpha, beta, False)
                 if score > maxEval:
                     maxEval = score
                     bestMove = action
@@ -129,9 +124,9 @@ class MyPlayer(PlayerDivercite):
         else:
             minEval = float('inf')
             actions = self._generate_heap_light_action(state, is_max_heap=False)
-            while len(actions) > 0:
+            while len(actions) > 0 and time.time() > self._timeout:
                 action = heapq.heappop(actions)[2]
-                score, _ = self.minimax(action.get_heavy_action(state).get_next_game_state(), depth + 1, alpha, beta, True)
+                score, _ = self.minimax(action.get_heavy_action(state).get_next_game_state(), depth - 1, alpha, beta, True)
                 if score < minEval:
                     minEval = score
                     bestMove = action
@@ -142,10 +137,6 @@ class MyPlayer(PlayerDivercite):
     
             self._transposition_table[hash(state)] = {'depth': depth, 'score': minEval}
             return minEval, bestMove
-
-    def evaluate(self, state: GameState):
-        _, id_opponent = self.get_opponent_id(state)
-        return state.scores[self.get_id()] - state.scores[id_opponent]
 
     def get_opponent_id(self, state: GameState):
         keys = list(state.scores.keys())
@@ -179,6 +170,10 @@ class MyPlayer(PlayerDivercite):
         grid_data = board.get_grid()
         return [(i, j) for i, row in enumerate(grid_data) for j, cell in enumerate(row) if (cell == ('◇ ', 'Black') or cell == ('▢ ', 'Black'))]
     
+    def evaluate(self, state: GameState):
+        _, id_opponent = self.get_opponent_id(state)
+        return state.scores[self.get_id()] - state.scores[id_opponent]
+
     def evaluate_board(self, state: GameState) -> int:
         if self.phase == 'EARLY':
             return self.evaluate_early(state)
@@ -187,15 +182,28 @@ class MyPlayer(PlayerDivercite):
         else:
             return self.evaluate_late(state)
 
+    def evaluate_early(self, state: GameState) -> int:
+        # Prioritize cities with spacing and close ressources opponents
+            # Don't block ourself from getting divercite
+        # Colour variety
+
+        pass
+
+    def evaluate_mid(self, state: GameState) -> int:
+        # Prioritize the number of divercite
+        # Block other player from getting divercite
+        # If no divercite, prioritize the number of cities with the same ressources
+        pass
+
     def evaluate_late(self, state: GameState) -> int:
         if state.is_done():
             scores = state.remove_draw(state.scores, state.get_rep())
-            if state.scores[self.get_id()] > state.scores[self.get_opponent_id(state)[1]]:
-                return 1
+            if scores[self.get_id()] > scores[self.get_opponent_id(state)[1]]:
+                return 1000
             else:
-                return -1
+                return -1000
         else:
-            return 0
+            return self.evaluate(state) # TODO: add a better evaluation function
 
 
     # def evaluate_board(self, state: GameState) -> int:
