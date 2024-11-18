@@ -56,10 +56,10 @@ class MyPlayer(PlayerDivercite):
           }
         self.phase = 'EARLY'
 
-    def handle_phase_change(self, state: GameState):
+    def _handle_phase_change(self, state: GameState):
         free_positions = len(self._get_free_positions(state.get_rep().get_env(), state.get_rep().get_dimensions()))
         player_pieces_left = sum(state.players_pieces_left[self.get_id()].values())
-        opponent_pieces_left = sum(state.players_pieces_left[self.get_opponent_id(state)[1]].values())
+        opponent_pieces_left = sum(state.players_pieces_left[self._get_opponent_id(state)[1]].values())
         
         if free_positions > 50 and player_pieces_left > 10 and opponent_pieces_left > 10:
             self.phase = 'EARLY'
@@ -78,7 +78,7 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-        self.handle_phase_change(current_state)
+        self._handle_phase_change(current_state)
     
 
         action = None
@@ -88,18 +88,18 @@ class MyPlayer(PlayerDivercite):
         for depth in range(1, MAX_DEPTH + 1, TWO_PLY_STEP):
             if time.time() > self._timeout:
                 break
-            _, action = self.minimax(current_state, depth, float('-inf'), float('inf'), maximizing=True)
+            _, action = self._minimax(current_state, depth, float('-inf'), float('inf'), maximizing=True)
         self._number_of_remaining_moves -= 1
         return action
     
-    def minimax(self, state: GameState, depth: int, alpha: float, beta: float, maximizing):
+    def _minimax(self, state: GameState, depth: int, alpha: float, beta: float, maximizing):
         if hash(state) in self._transposition_table:
             stored_depth, stored_score = self._transposition_table[hash(state)]['depth'], self._transposition_table[hash(state)]['score']
             if stored_depth >= depth:
                 return stored_score, None
 
         if depth == 0 or state.is_done():
-            score = self.evaluate_board(state)
+            score = self._evaluate_board(state)
             self._transposition_table[hash(state)] = {'depth': depth, 'score': score}
             return score, None
         
@@ -109,7 +109,7 @@ class MyPlayer(PlayerDivercite):
             actions = self._generate_heap_light_action(state, is_max_heap=True)
             while len(actions) > 0 and time.time() > self._timeout:
                 action = heapq.heappop(actions)[2]
-                score, _ = self.minimax(action.get_heavy_action(state).get_next_game_state(), depth - 1, alpha, beta, False)
+                score, _ = self._minimax(action.get_heavy_action(state).get_next_game_state(), depth - 1, alpha, beta, False)
                 if score > maxEval:
                     maxEval = score
                     bestMove = action
@@ -126,7 +126,7 @@ class MyPlayer(PlayerDivercite):
             actions = self._generate_heap_light_action(state, is_max_heap=False)
             while len(actions) > 0 and time.time() > self._timeout:
                 action = heapq.heappop(actions)[2]
-                score, _ = self.minimax(action.get_heavy_action(state).get_next_game_state(), depth - 1, alpha, beta, True)
+                score, _ = self._minimax(action.get_heavy_action(state).get_next_game_state(), depth - 1, alpha, beta, True)
                 if score < minEval:
                     minEval = score
                     bestMove = action
@@ -138,7 +138,7 @@ class MyPlayer(PlayerDivercite):
             self._transposition_table[hash(state)] = {'depth': depth, 'score': minEval}
             return minEval, bestMove
 
-    def get_opponent_id(self, state: GameState):
+    def _get_opponent_id(self, state: GameState):
         keys = list(state.scores.keys())
         return (keys[0], keys[1]) if keys[0] == self.get_id() else (keys[1], keys[0])
     
@@ -161,7 +161,7 @@ class MyPlayer(PlayerDivercite):
                         data = {"piece": piece_color+piece_res_city, "position" : (i,j)}
                         action = LightAction(data)
                         new_state = state.apply_action(action)
-                        score = self.evaluate_board(new_state)
+                        score = self._evaluate_board(new_state)
                         heapq.heappush(heap, (multiplicator * score, id(action), action))
         return heap
 
@@ -170,44 +170,46 @@ class MyPlayer(PlayerDivercite):
         grid_data = board.get_grid()
         return [(i, j) for i, row in enumerate(grid_data) for j, cell in enumerate(row) if (cell == ('◇ ', 'Black') or cell == ('▢ ', 'Black'))]
     
-    def evaluate(self, state: GameState):
-        _, id_opponent = self.get_opponent_id(state)
+    def _evaluate(self, state: GameState):
+        _, id_opponent = self._get_opponent_id(state)
         return state.scores[self.get_id()] - state.scores[id_opponent]
 
-    def evaluate_board(self, state: GameState) -> int:
+    def _evaluate_board(self, state: GameState) -> int:
         if self.phase == 'EARLY':
-            return self.evaluate_early(state)
+            return self._evaluate_early(state)
         elif self.phase == 'MID':
-            return self.evaluate_mid(state)
+            return self._evaluate_mid(state)
         else:
-            return self.evaluate_late(state)
+            return self._evaluate_late(state)
 
-    def evaluate_early(self, state: GameState) -> int:
+    def _evaluate_early(self, state: GameState) -> int:
         # Prioritize cities with spacing and close ressources opponents
             # Don't block ourself from getting divercite
         # Colour variety
-
+        
         pass
 
-    def evaluate_mid(self, state: GameState) -> int:
+    def _evaluate_mid(self, state: GameState) -> int:
         # Prioritize the number of divercite
         # Block other player from getting divercite
         # If no divercite, prioritize the number of cities with the same ressources
         pass
 
-    def evaluate_late(self, state: GameState) -> int:
+    def _evaluate_late(self, state: GameState) -> int:
         if state.is_done():
             scores = state.remove_draw(state.scores, state.get_rep())
-            if scores[self.get_id()] > scores[self.get_opponent_id(state)[1]]:
+            if scores[self.get_id()] > scores[self._get_opponent_id(state)[1]]:
                 return 1000
             else:
                 return -1000
         else:
             return self.evaluate(state) # TODO: add a better evaluation function
 
-
-    # def evaluate_board(self, state: GameState) -> int:
-    #     player_id, opponent_id =  self.get_opponent_id(state)
+    def _verify_variety(self, state: GameState) -> int:
+        
+        pass
+    # def _evaluate_board(self, state: GameState) -> int:
+    #     player_id, opponent_id =  self._get_opponent_id(state)
     #     score = 0
 
     #     divercites = self.number_divercite(state)
@@ -265,7 +267,7 @@ class MyPlayer(PlayerDivercite):
     #     Returns:
     #         Dict[str, int]: The number of divercite for each player.
     #     """
-    #     player_id, opponent_id =  self.get_opponent_id(state)
+    #     player_id, opponent_id =  self._get_opponent_id(state)
     #     divercite = {
     #         player_id: 0,
     #         opponent_id: 0
@@ -292,7 +294,7 @@ class MyPlayer(PlayerDivercite):
     #     Returns:
     #         Dict[str, Dict]: The number of cities close to divercite for each player.
     #     """
-    #     player_id, opponent_id =  self.get_opponent_id(state)
+    #     player_id, opponent_id =  self._get_opponent_id(state)
     #     cities = {
     #         player_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
     #         opponent_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
@@ -327,7 +329,7 @@ class MyPlayer(PlayerDivercite):
     #     Returns:
     #         Dict[str, int]: The number of cities with the same ressources for each player.
     #     """
-    #     player_id, opponent_id =  self.get_opponent_id(state)
+    #     player_id, opponent_id =  self._get_opponent_id(state)
     #     cities = {
     #         player_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
     #         opponent_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
