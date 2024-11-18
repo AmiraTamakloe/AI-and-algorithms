@@ -224,7 +224,7 @@ class MyPlayer(PlayerDivercite):
             else:
                 return -1000
         else:
-            return self.evaluate(state) # TODO: add a better evaluation function
+            return self._evaluate(state) # TODO: add a better evaluation function
 
     def _verify_variety(self, state: GameState) -> int:
         """
