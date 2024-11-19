@@ -9,11 +9,11 @@ import heapq
 from seahorse.game.light_action import LightAction
 from board_divercite import BoardDivercite
 from typing import Dict
-import numpy as np
 
 MAX_DEPTH = 40
 TWO_PLY_STEP = 2
-
+CITIES_POS = [(1, 4), (2, 3), (2, 5), (3, 2), (3, 4), (3, 6), (4, 1), (4, 3), (4, 5), (4, 7), (5, 2), (5, 4), (5, 6), (6, 3), (6, 5), (7, 4)]
+RESSOURCES_POS = [(0, 4), (1, 3), (1, 5), (2, 2), (2, 4), (2, 6), (3, 1), (3, 3), (3, 5), (3, 7), (4, 0), (4, 2), (4, 4), (4, 6), (4, 8), (5, 1), (5, 3), (5, 5), (5, 7), (6, 2), (6, 4), (6, 6), (7, 3), (7, 5), (8, 4)]
 class MyPlayer(PlayerDivercite):
     """
     Player class for Divercite game that makes random moves.
@@ -60,7 +60,7 @@ class MyPlayer(PlayerDivercite):
         self.phase = 'EARLY'
 
     def _handle_phase_change(self, state: GameState):
-        if 15 < self._number_of_remaining_moves:
+        if 16 < self._number_of_remaining_moves:
             self.phase = 'EARLY'
         elif 7 < self._number_of_remaining_moves :
             self.phase = 'MID'
@@ -119,6 +119,9 @@ class MyPlayer(PlayerDivercite):
                     bestMove = action
                     break # pruning
             if bestMove is None:
+                if len(actions) == 0:
+                    actions = self._generate_heap_light_action(state, is_max_heap=True)
+                    print()
                 bestMove = heapq.heappop(actions)[2]
                 maxEval = self._evaluate_board(bestMove.get_heavy_action(state).get_next_game_state())
 
@@ -143,6 +146,9 @@ class MyPlayer(PlayerDivercite):
                     break # pruning
                     
             if bestMove is None:
+                if len(actions) == 0:
+                    actions = self._generate_heap_light_action(state, is_max_heap=True)
+                    print()
                 bestMove = heapq.heappop(actions)[2]
                 minEval = self._evaluate_board(bestMove.get_heavy_action(state).get_next_game_state())
             
@@ -161,9 +167,6 @@ class MyPlayer(PlayerDivercite):
         free_positions = self._get_free_positions(b, d)
         multiplicator = -1 if is_max_heap else 1
         for piece, n_piece in state.players_pieces_left[state.next_player.get_id()].items():
-            if self._timeout < time.time():
-                break
-
             piece_color = piece[0]
             piece_res_city = piece[1]
             if n_piece > 0:
@@ -205,7 +208,6 @@ class MyPlayer(PlayerDivercite):
         score += self._evaluate(state)
         return score
     
-
     def _evaluate_mid(self, state: GameState) -> int:
         # Prioritize the number of divercite
         # Block other player from getting divercite
@@ -238,8 +240,8 @@ class MyPlayer(PlayerDivercite):
         ressources = defaultdict(int, filter_items('R'))
         cities = defaultdict(int, filter_items('C')) 
 
-        score += 10 * self._variety_ressources(ressources)
-        score += 5 * self._variety_cities(cities)
+        score += 10 / (self._variety_ressources(ressources) + 1)
+        score += 5 / (self._variety_cities(cities) + 1)
         return score
     
     def _variety_ressources(self, ressources: Dict) -> int:
@@ -253,7 +255,9 @@ class MyPlayer(PlayerDivercite):
             int: The variety of ressources.
         """
         ressources_count = [value for value in ressources.values()]
-        return math.ceil(np.std(ressources_count))
+        min_count = min(ressources_count)
+        max_count = max(ressources_count)
+        return max_count - min_count
     
     def _variety_cities(self, ressources: Dict) -> int:
         """
@@ -266,7 +270,9 @@ class MyPlayer(PlayerDivercite):
             int: The variety of cities.
         """
         cities_count = [value for value in ressources.values()]
-        return math.ceil(np.std(cities_count))
+        min_count = min(cities_count)
+        max_count = max(cities_count)
+        return max_count - min_count
     
     def _blocked_divercite(self, state: GameState) -> int:
         """
@@ -278,15 +284,14 @@ class MyPlayer(PlayerDivercite):
         Returns:
             int: The score of the evaluation
         """
-        cities_pos = [(1, 4), (2, 3), (2, 5), (3, 2), (3, 4), (3, 6), (4, 1), (4, 3), (4, 5), (4, 7), (5, 2), (5, 4), (5, 6), (6, 3), (6, 5), (7, 4)]
-        for pos in cities_pos:
+        for pos in CITIES_POS:
             if state.get_rep().get_env().get(pos) is not None and not state.check_divercite(pos):
                 owner_city = state.get_rep().get_env()[pos].piece_type[-1]
                 if owner_city != self.piece_type:
                     continue
                 neighbors = state.get_rep().get_neighbours(pos[0], pos[1])
                 neighboring_colors = set()
-                for neighbor, value in neighbors.items():
+                for _, value in neighbors.items():
                     if value[0] != 'EMPTY':
                         if value[0] not in neighboring_colors:
                             neighboring_colors.add(value[0])
@@ -396,16 +401,24 @@ class MyPlayer(PlayerDivercite):
             player_id: 0,
             opponent_id: 0
         }
-        for i in range(state.get_rep().get_dimensions()[0]):
-            for j in range(state.get_rep().get_dimensions()[1]):
+        for pos in CITIES_POS:
+            if state.get_rep().get_env().get(pos) is not None and state.check_divercite(pos):
+                owner_city = state.get_rep().get_env()[pos].piece_type[-1]
+                if owner_city == self.piece_type:
+                    divercite[player_id] += 1
+                else:
+                    divercite[opponent_id] += 1
+
+        # for i in range(state.get_rep().get_dimensions()[0]):
+        #     for j in range(state.get_rep().get_dimensions()[1]):
                 
-                if state.in_board((i, j)) and state.piece_type_match('C', (i, j)) and (i, j) in state.get_rep().get_env() and state.check_divercite((i, j)):
-                    players_color = self.get_piece_type()
-                    city_color = state.get_rep().get_env()[(i, j)].piece_type[-1]
-                    if players_color == city_color:
-                        divercite[player_id] += 1
-                    else:   
-                        divercite[opponent_id] += 1
+        #         if state.in_board((i, j)) and state.piece_type_match('C', (i, j)) and (i, j) in state.get_rep().get_env() and state.check_divercite((i, j)):
+        #             players_color = self.get_piece_type()
+        #             city_color = state.get_rep().get_env()[(i, j)].piece_type[-1]
+        #             if players_color == city_color:
+        #                 divercite[player_id] += 1
+        #             else:   
+        #                 divercite[opponent_id] += 1
         score = divercite[player_id] - divercite[opponent_id]
         return score * 100
 
@@ -425,7 +438,7 @@ class MyPlayer(PlayerDivercite):
         count_cities_opponent_blocked = cities_blocked[opponent_id][2] + cities_blocked[opponent_id][3] + cities_blocked[opponent_id][4]
         count_cities_blocked = cities_blocked[player_id][2] + cities_blocked[player_id][3] + cities_blocked[player_id][4]
 
-        return count_cities_blocked - count_cities_opponent_blocked
+        return (count_cities_blocked - count_cities_opponent_blocked) * 100
     
     def cities_with_same_ressources(self, state: GameState) -> Dict[str, int]:
         """
@@ -443,9 +456,7 @@ class MyPlayer(PlayerDivercite):
             opponent_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
         }
         players_color = self.get_piece_type()
-        cities_pos = [(1, 4), (2, 3), (2, 5), (3, 2), (3, 4), (3, 6), (4, 1), (4, 3), (4, 5), (4, 7), (5, 2), (5, 4), (5, 6), (6, 3), (6, 5), (7, 4)]
-        for pos in cities_pos:
-
+        for pos in CITIES_POS:
             if state.get_rep().get_env().get(pos) is not None:
                 city_color = state.get_rep().get_env()[pos].piece_type[0]
                 neighbors = state.get_rep().get_neighbours(pos[0], pos[1])
