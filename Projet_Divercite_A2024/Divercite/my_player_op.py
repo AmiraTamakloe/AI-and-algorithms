@@ -60,6 +60,7 @@ class MyPlayer(PlayerDivercite):
         self.phase = 'EARLY'
 
     def _handle_phase_change(self, state: GameState):
+        number_remaining_pieces = sum([value for value in state.players_pieces_left[self.get_id()].values()])
         if 16 < self._number_of_remaining_moves:
             self.phase = 'EARLY'
         elif 7 < self._number_of_remaining_moves :
@@ -92,6 +93,7 @@ class MyPlayer(PlayerDivercite):
         return action
     
     def _minimax(self, state: GameState, depth: int, alpha: float, beta: float, maximizing):
+        self._handle_phase_change(state)
         if hash(state) in self._transposition_table:
             stored_depth, stored_score = self._transposition_table[hash(state)]['depth'], self._transposition_table[hash(state)]['score']
             if stored_depth >= depth: # TODO: check if we correctly compare the depth
@@ -197,34 +199,30 @@ class MyPlayer(PlayerDivercite):
             return self._evaluate_late(state)
 
     def _evaluate_early(self, state: GameState) -> int:
-        # Prioritize cities with spacing and close ressources opponents
-            # Don't block ourself from getting divercite
-        # Colour variety
         score = 0
         score += 10 * self._verify_variety(state)
-        score += 5 * self._blocked_divercite(state)
+        score += 10 * self._blocked_divercite(state)
         score += 5 * self._prioritize_cities(state)
         score += 1 * self._placement(state)
-        score += self._evaluate(state)
+        score += 10 * self._evaluate(state)
         return score
     
     def _evaluate_mid(self, state: GameState) -> int:
-        # Prioritize the number of divercite
-        # Block other player from getting divercite
-        # If no divercite, prioritize the number of cities with the same ressources
         score = 0
-        score += 10 * self._divercity_count(state)
+        score += 35 * self._divercity_count(state)
         score += 5 * self._block_opponent_divercite(state)
-        score += self._evaluate(state)
+        score += 10 * self._closeness_divercite(state)
+        score += 5 * self._blocked_divercite(state)
+        score += 15 * self._evaluate(state)
         return score
 
     def _evaluate_late(self, state: GameState) -> int:
         if state.is_done():
             scores = state.remove_draw(state.scores, state.get_rep())
             if scores[self.get_id()] > scores[self._get_opponent_id(state)[1]]:
-                return 1000
+                return 10000
             else:
-                return -1000
+                return -10000
         else:
             return self._evaluate(state) # TODO: add a better evaluation function
 
@@ -284,6 +282,7 @@ class MyPlayer(PlayerDivercite):
         Returns:
             int: The score of the evaluation
         """
+        count = 0
         for pos in CITIES_POS:
             if state.get_rep().get_env().get(pos) is not None and not state.check_divercite(pos):
                 owner_city = state.get_rep().get_env()[pos].piece_type[-1]
@@ -296,8 +295,8 @@ class MyPlayer(PlayerDivercite):
                         if value[0] not in neighboring_colors:
                             neighboring_colors.add(value[0])
                         else:
-                            return -100
-        return 0
+                            count -= 1
+        return count * 100
 
     def _prioritize_cities(self, state: GameState) -> int:
         """
@@ -424,7 +423,7 @@ class MyPlayer(PlayerDivercite):
 
     def _block_opponent_divercite(self, state: GameState) -> int:
         """
-        Evaluate the number of divercite for each player.
+        Evaluate the number of opponent's cities that cannot do divercite.
 
         Args:
             state (GameState): The current game state.
@@ -435,10 +434,10 @@ class MyPlayer(PlayerDivercite):
         player_id, opponent_id =  self._get_opponent_id(state)
 
         cities_blocked = self.cities_with_same_ressources(state)
-        count_cities_opponent_blocked = cities_blocked[opponent_id][2] + cities_blocked[opponent_id][3] + cities_blocked[opponent_id][4]
-        count_cities_blocked = cities_blocked[player_id][2] + cities_blocked[player_id][3] + cities_blocked[player_id][4]
+        count_cities_opponent_blocked = cities_blocked[opponent_id][2]
+        count_cities_blocked = cities_blocked[player_id][2] 
 
-        return (count_cities_blocked - count_cities_opponent_blocked) * 100
+        return (count_cities_opponent_blocked - count_cities_blocked) * 100
     
     def cities_with_same_ressources(self, state: GameState) -> Dict[str, int]:
         """
@@ -470,9 +469,45 @@ class MyPlayer(PlayerDivercite):
                     cities[opponent_id][count] += 1
         return cities
     
+    def _closeness_divercite(self, state: GameState) -> int:
+        possible_divercite = self.possible_divercite(state)
+        player_id, opponent_id = self._get_opponent_id(state)
+        return (possible_divercite[player_id][3] - possible_divercite[opponent_id][3]) * 100
+
+    def possible_divercite(self, state: GameState) -> Dict[str, Dict]:
+        """
+        Evaluate how many cities are close to divercite and to what degree.
+
+        Args:
+            state (GameState): The current game state.
     
-    
-    
+        Returns:
+            Dict[str, Dict]: The number of cities close to divercite for each player.
+        """
+        player_id, opponent_id =  self._get_opponent_id(state)
+        cities = {
+            player_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
+            opponent_id: {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+        }
+        
+        players_color = self.get_piece_type()
+        cities_pos = [(1, 4), (2, 3), (2, 5), (3, 2), (3, 4), (3, 6), (4, 1), (4, 3), (4, 5), (4, 7), (5, 2), (5, 4), (5, 6), (6, 3), (6, 5), (7, 4)]
+        for pos in cities_pos:
+            if state.get_rep().get_env().get(pos) is not None and not state.check_divercite(pos):
+                color = state.get_rep().get_env()[pos].piece_type[0]
+                neighbors = state.get_rep().get_neighbours(pos[0], pos[1])
+                neighboring_colors = set()
+                for _, value in neighbors.items():
+                    if value[0] != 'EMPTY':
+                        if value[0] not in neighboring_colors:
+                            neighboring_colors.add(value[0])
+                        else:
+                            continue
+                if players_color == color:
+                    cities[player_id][len(neighboring_colors)] += 1
+                else:
+                    cities[opponent_id][len(neighboring_colors)] += 1
+        return cities
     
     
     
