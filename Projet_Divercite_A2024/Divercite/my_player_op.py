@@ -2,7 +2,6 @@ from collections import defaultdict
 from player_divercite import PlayerDivercite
 from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
-from game_state_divercite import GameStateDivercite
 import time
 import heapq
 from seahorse.game.light_action import LightAction
