@@ -11,7 +11,6 @@ from typing import Dict
 MAX_DEPTH = 40
 TWO_PLY_STEP = 2
 CITIES_POS = [(1, 4), (2, 3), (2, 5), (3, 2), (3, 4), (3, 6), (4, 1), (4, 3), (4, 5), (4, 7), (5, 2), (5, 4), (5, 6), (6, 3), (6, 5), (7, 4)]
-RESSOURCES_POS = [(0, 4), (1, 3), (1, 5), (2, 2), (2, 4), (2, 6), (3, 1), (3, 3), (3, 5), (3, 7), (4, 0), (4, 2), (4, 4), (4, 6), (4, 8), (5, 1), (5, 3), (5, 5), (5, 7), (6, 2), (6, 4), (6, 6), (7, 3), (7, 5), (8, 4)]
 
 class MyPlayer(PlayerDivercite):
     """
@@ -382,18 +381,18 @@ class MyPlayer(PlayerDivercite):
 
         filter_items = lambda item_type: {item: quantity for item, quantity in items.items() if item[1] == item_type}
 
-        ressources = defaultdict(int, filter_items('R'))
+        resources = defaultdict(int, filter_items('R'))
         cities = defaultdict(int, filter_items('C')) 
 
         # Check if are using too much of one color
-        variety_ressources = self._variety_ressources(ressources) 
+        variety_resources = self._variety_resources(resources) 
         variety_cities = self._variety_cities(cities)
-        score += (variety_ressources + variety_cities) 
+        score += (variety_resources + variety_cities) 
 
-        # Check if we are using more ressources than cities
-        used_ressources = (12 - sum(ressources.values())) / 12
+        # Check if we are using more resources than cities
+        used_resources = (12 - sum(resources.values())) / 12
         used_cities = (8 - sum(cities.values())) / 8
-        ratio = (used_cities) / max(used_ressources, 1)
+        ratio = (used_cities) / max(used_resources, 1)
         if ratio > 0.5 and ratio < 2:
             score += 2
         else:
@@ -401,29 +400,29 @@ class MyPlayer(PlayerDivercite):
 
         return score
     
-    def _variety_ressources(self, ressources: Dict) -> int:
+    def _variety_resources(self, resources: Dict) -> int:
         """
-        Calculate a score representing the variety of ressources used by the player.
+        Calculate a score representing the variety of resources used by the player.
 
         The score is determined by the difference between the number of times the 
-        most used ressource and the least used ressource are used. A lower difference 
+        most used resource and the least used resource are used. A lower difference 
         indicates a higher variety, resulting in a higher score.
 
         Args:
-            ressources (Dict): A dictionary where keys represent ressource types and 
-                               values represent the count of each ressource type.
+            resources (Dict): A dictionary where keys represent resource types and 
+                               values represent the count of each resource type.
 
         Returns:
-            int: A score representing the variety of ressources used. 
+            int: A score representing the variety of resources used. 
                  Higher score indicates more variety.
         """
 
-        ressources_count = [value for value in ressources.values()]
-        min_count = min(ressources_count)
-        max_count = max(ressources_count)
+        resources_count = [value for value in resources.values()]
+        min_count = min(resources_count)
+        max_count = max(resources_count)
         return 3 - (max_count - min_count)
     
-    def _variety_cities(self, ressources: Dict) -> int:
+    def _variety_cities(self, resources: Dict) -> int:
         """
         Calculate a score representing the variety of cities used by the player.
 
@@ -432,7 +431,7 @@ class MyPlayer(PlayerDivercite):
         indicates a higher variety, resulting in a higher score.
 
         Args:
-            ressources (Dict): A dictionary where keys represent city types and 
+            resources (Dict): A dictionary where keys represent city types and 
                                values represent the count of each city type.
 
         Returns:
@@ -440,7 +439,7 @@ class MyPlayer(PlayerDivercite):
                  Higher score indicates more variety.
         """
 
-        cities_count = [value for value in ressources.values()]
+        cities_count = [value for value in resources.values()]
         min_count = min(cities_count)
         max_count = max(cities_count)
         return 2 - (max_count - min_count)
@@ -473,8 +472,8 @@ class MyPlayer(PlayerDivercite):
         """
         Evaluate how many cities are close to make a divercite for each player.
 
-        This heuristic assigns a higher score to game states where the player has 3 ressources of different colors around his cities
-        and the correct ressource to do a divercite.
+        This heuristic assigns a higher score to game states where the player has 3 resources of different colors around his cities
+        and the correct resource to do a divercite.
 
         Args:
             state (GameState): The current game state.
